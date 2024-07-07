@@ -1,0 +1,82 @@
+package main
+
+import (
+	"bufio"
+	"context"
+	"fmt"
+	"log"
+	"os"
+	"strings"
+
+	"github.com/AncientHeroX/contracting/farutils"
+	"github.com/joho/godotenv"
+	openai "github.com/sashabaranov/go-openai"
+)
+
+
+func main() {
+    var FARparts strings.Builder
+
+    for i := 1; i < 55; i++ {
+        partInfo, err := GetPartInfo(i)
+        if err != nil {
+            break
+        }
+
+        FARparts.WriteString(partInfo)
+    }
+
+    err := godotenv.Load()
+
+    if err != nil {
+        log.Fatal("Error loading .env file")
+    }
+
+    reader := bufio.NewReader(os.Stdin)
+    fmt.Print("Ask a Question: ")
+    text, _ := reader.ReadString('\n')
+
+    API_KEY:= os.Getenv("api_key")
+
+    client := openai.NewClient(API_KEY)
+	resp, err := client.CreateChatCompletion(
+		context.Background(),
+		openai.ChatCompletionRequest{
+			Model: openai.GPT3Dot5Turbo,
+			Messages: []openai.ChatCompletionMessage{
+				{
+					Role:    openai.ChatMessageRoleSystem,
+                    Content: fmt.Sprintf(`Respond with where in the FAR to find the answer to the question asked. Use only the following information. \n FAR PARTS: \n%s`, FARparts.String()),
+				},
+				{
+					Role:    openai.ChatMessageRoleUser,
+					Content: text,
+				},
+			},
+		},
+	)
+
+	if err != nil {
+		fmt.Printf("ChatCompletion error: %v\n", err)
+		return
+	}
+
+	fmt.Println(resp.Choices[0].Message.Content)
+}
+
+func GetPartInfo(part int) (string, error) {
+    title, err := farutils.GetPartTitle(part)
+
+    if err != nil {
+        return "", err
+    }
+
+    scope, err := farutils.GetPartScope(part)
+
+    if err != nil {
+        return title, nil 
+    }
+
+    return fmt.Sprintf("%s: %s", title, scope), nil
+}
+
