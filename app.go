@@ -137,6 +137,7 @@ func main() {
                 log.Fatal("Could not get part")
             }
             Summarize(user_question, searchResult)
+            
         }
     } else {
         fmt.Println(resp.Choices[0].Message.Content)
@@ -151,7 +152,7 @@ func Summarize(question string, searchResult string) {
 			Messages: []openai.ChatCompletionMessage{
 				{
 					Role:    openai.ChatMessageRoleSystem,
-                    Content: fmt.Sprintf(`You are an expert assistant specialized in the Federal Acquisition Regulations (FAR) system. I will provide you with a specific FAR part or subpart, and you will respond to my questions solely based on the information from that part or subpart. You are not to use any prior knowledge or external information. Additionally, when you provide an answer, cite the exact location in the provided FAR part or subpart by quoting the relevant sections. \n %s`, searchResult),
+                    Content: fmt.Sprintf(`You are an expert assistant specialized in the Federal Acquisition Regulations (FAR) system. I will provide you with a specific FAR part or subpart, and you will respond to my questions solely based on the information from that part or subpart. You are not to use any prior knowledge or external information. Additionally, when you provide an answer, cite the exact location in the provided FAR part or subpart by quoting the relevant sections. If the section does not cover the question please notify the user.\n %s`, searchResult),
 				},
 				{
 					Role:    openai.ChatMessageRoleUser,
