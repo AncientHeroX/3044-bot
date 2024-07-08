@@ -74,7 +74,7 @@ func main() {
                                 },
                                 "searchterms": {
                                     Type: jsonschema.String,
-                                    Description: "One string of different variations of a search query, each query MUST be separated by commas. Limit search queries to terms or words. Minimum of 6 queries. If entire part is needed request an empty string (ie: '') Example ('foo, bar, foo bar')",
+                                    Description: "One string of different variations of a search query, each query MUST be separated by commas. Limit search queries to terms or words. Minimum of 6 comma separated items. If entire part is needed request an empty string (ie: '') Example ('foo, bar, foo bar')",
                                 },
                             },
                             Required: []string{"partNum", "searchterms"},
