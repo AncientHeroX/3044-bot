@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"golang.org/x/net/html"
-    
+
 	"github.com/tdewolff/minify/v2"
 	mhtml "github.com/tdewolff/minify/v2/html"
 )
@@ -19,6 +19,87 @@ func getAttr(n *html.Node, key string) (string, bool) {
         }
     }
     return "", false
+}
+
+func SubPartSearch(path string, search []string) (string, error) {
+    mi := minify.New()
+
+    mi.AddFunc("text/html", mhtml.Minify)
+
+    subPartText, err := ReadHtmlFromFile(path);
+
+    if err != nil {
+        return "", err
+    }
+
+    minHtml, err := mi.String("text/html", subPartText)
+
+    partdata, err := html.Parse(strings.NewReader(minHtml))
+
+    if err != nil {
+        return "", errors.New("Could not Parse")
+    }
+    
+    // content tag
+    contag := GetElementsByClass(partdata, "body conbody")
+    if len(contag) <= 0 {
+        return "", nil
+    }
+
+    if search[0] != ""{
+        searchResult, err := TextSearch(contag[0], search)
+
+        if err != nil {
+            fmt.Printf("Search for %s, in %s Not found", search, path)
+            return "", errors.New("No text found")
+        }
+
+        return searchResult, nil
+    }
+    searchResult := GetText(contag[0])
+
+    return searchResult, nil
+
+}
+
+func checkString(str string, searchTerms []string) bool {
+    for _, search := range searchTerms {
+        if strings.Contains(strings.ToUpper(str), strings.ToUpper(search)) {
+            return true
+        }
+    }
+    return false
+}
+func TextSearch(n *html.Node, search []string) (string, error) {
+    var returnText strings.Builder;
+
+    if n.Type == html.TextNode {
+        if checkString(n.Data, search) {
+            var parentP *html.Node
+            for cn := n.Parent; cn != nil; cn = cn.Parent {
+                if cn.Data == "p" {
+                    parentP = cn
+                    break
+                }
+            }
+            if parentP != nil {
+                returnText.WriteString(GetText(parentP))
+
+                for cn := parentP.NextSibling; cn != nil && !checkAttr(cn, "class", "ListL1"); cn = cn.NextSibling {
+                    returnText.WriteString(GetText(cn))
+                }
+            }        
+        }
+    }
+
+    for c := n.FirstChild; c != nil; c = c.NextSibling {
+        recText, err := TextSearch(c, search)
+        if err == nil {
+            returnText.WriteString(fmt.Sprintf("%s\n", recText))
+        }
+    }
+
+    return strings.Trim(returnText.String(), "\n"), nil
 }
 func GetPartScope(part int) (string, error) {
     mi := minify.New()
